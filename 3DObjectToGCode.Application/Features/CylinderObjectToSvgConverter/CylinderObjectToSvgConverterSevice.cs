@@ -1,35 +1,63 @@
-﻿using _3DObjectToGCode.Application.Features.ObjToMeshConverter;
+﻿using _3DObjectToGCode.Application.Features.IOFile;
+using _3DObjectToGCode.Application.Features.ObjToMeshConverter;
+using _3DObjectToGCode.Application.Helpers;
 using GeometRi;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
-using ObjParser;
-using ObjParser.Types;
 using SvgLib;
-using System.Diagnostics;
-using System.Linq;
-using System.Numerics;
 using Face = ObjParser.Types.Face;
 
 namespace _3DObjectToGCode.Application.Features.CylinderObjectToSvgConverter;
 
-public class CylinderObjectToSvgConverterSevice(ILogger<CylinderObjectToSvgConverterSevice> logger)
+public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogger<CylinderObjectToSvgConverterSevice> logger)
 {
-    public async Task<SvgDocument?> Convert(MeshObject meshObject)
+    public IEnumerable<Point3d> Convert(MeshObject meshObject)
     {
+        var points = meshObject.Verts.Select(v => new { Id = v.Index, Point = new Point3d(v.X, v.Y, v.Z) }).ToArray();
 
-        var middleVert = meshObject.Verts.ElementAt(meshObject.Verts.Count() / 2);
-        var targetFace = meshObject.Faces.First(f => f.VertexIndexList.Contains(middleVert.Index));
+        var middlePoint = points.ElementAt(points.Length / 2);
+        var targetFace = meshObject.Faces.First(f => f.VertexIndexList.Contains(middlePoint.Id));
 
-        var axis = GetCylinderAxis(meshObject, new CylinderNeighbourFaces(null, [targetFace.Id], targetFace));
+        var cutPlane = GetCylinderAxis(meshObject, new CylinderNeighbourFaces(null, null, [targetFace.Id], targetFace));
 
-        if (axis == null)
+        if (cutPlane == null)
         {
             logger.LogInformation("Mesh object has not cylinder shape");
             return null;
         }
+
+        var facePlanes = meshObject.Faces
+        .Select(f =>
+        {
+            var facePoints = points.Where(p => f.VertexIndexList.Contains(p.Id)).Select(p => p.Point).ToArray();
+            var plane = new Plane3d(facePoints[0], facePoints[1], facePoints[2]);
+            return new { Face = f, Plane = plane, Edges = facePoints.ToSegments() };
+        })
+        .ToList();
+
+        var crossCurvePoints = new List<Point3d>();
+        facePlanes.ForEach(fp =>
+        {
+            var intersection = cutPlane.IntersectionWith(fp.Plane) as Line3d;
+            if (intersection != null)
+            {
+                var crossPoints = fp.Edges
+                    .Select(e => intersection.IntersectionWith(e) as Point3d)
+                    .Where(p => p != null)
+                    .ToArray();
+
+                crossCurvePoints.AddRange(crossPoints);
+            }
+        });
+
+        var svgDocument = SvgDocument.Create();
+        var path = svgDocument.AddPath();
+        path.D = crossCurvePoints.ToArray().ToPathString();
+        fileService.SaveSvg("cylinder_cross_slice", svgDocument.Element.OuterXml);
+
+        return crossCurvePoints;
     }
 
-    private Vector3d? GetCylinderAxis(MeshObject meshObject, CylinderNeighbourFaces cylinderNeighbourFaces)
+    private Plane3d? GetCylinderAxis(MeshObject meshObject, CylinderNeighbourFaces cylinderNeighbourFaces)
     {
         var result = GetNextCylinderLoopFace(meshObject, cylinderNeighbourFaces);
         if (result?.FaceNormal != null && result.NextFace != null)
@@ -37,12 +65,13 @@ public class CylinderObjectToSvgConverterSevice(ILogger<CylinderObjectToSvgConve
             return GetCylinderAxis(meshObject, result);
         }
 
-        return result?.FaceNormal?.Direction?.OrthogonalVector;
+        return result?.FaceNormal != null && result?.Center != null ?
+            new Plane3d(result.Center, result.FaceNormal.Direction) : null;
     }
 
     private CylinderNeighbourFaces? GetNextCylinderLoopFace(MeshObject meshObject, CylinderNeighbourFaces cylinderNeighbourFaces)
     {
-        var (intersectionPoint, processedFaceIds, targetFace) = cylinderNeighbourFaces;
+        var (faceNormal, center, processedFaceIds, targetFace) = cylinderNeighbourFaces;
         var neighbourFaces = meshObject.Faces
             .Where(f => f.VertexIndexList.Length == 4 && f.VertexIndexList.Intersect(targetFace.VertexIndexList).Any())
             .ToArray();
@@ -52,20 +81,21 @@ public class CylinderObjectToSvgConverterSevice(ILogger<CylinderObjectToSvgConve
             return null;
         }
 
-        var neighbourFacesNormals = neighbourFaces.Select(f =>
-        {
-            var points = meshObject.Verts.Where(v => f.VertexIndexList.Contains(v.Index))
-                .Select(v => new Point3d(v.X, v.Y, v.Z)).ToArray();
+        var neighbourFacesNormals = neighbourFaces
+            .Where(f => processedFaceIds.Count > 1 ? !processedFaceIds.Contains(f.Id) : true)
+            .Select(f =>
+            {
+                var points = meshObject.Verts.Where(v => f.VertexIndexList.Contains(v.Index))
+                    .Select(v => new Point3d(v.X, v.Y, v.Z)).ToArray();
 
-            var plane = new Plane3d(points[0], points[1], points[2]);
-            return new { FaceId = f.Id, plane.Normal };
-        })
-        .ToArray();
+                var plane = new Plane3d(points[0], points[1], points[2]);
+                return new { FaceId = f.Id, plane.Normal };
+            })
+            .ToArray();
 
-        var firstNormal = neighbourFacesNormals.First(n => n.FaceId == targetFace.Id).Normal.ToLine;
+        var normalLine = faceNormal ?? neighbourFacesNormals.First(n => n.FaceId == targetFace.Id).Normal.ToLine;
         var intersections = neighbourFacesNormals
-        .Where(n => n.FaceId != targetFace.Id)
-            .Select(v => new { v.FaceId, Point = firstNormal.IntersectionWith(v.Normal.ToLine) as Point3d })
+            .Select(v => new { v.FaceId, Point = normalLine.IntersectionWith(v.Normal.ToLine) as Point3d })
             .Where(p => p.Point != null)
             .ToArray();
 
@@ -74,84 +104,21 @@ public class CylinderObjectToSvgConverterSevice(ILogger<CylinderObjectToSvgConve
             return null;
         }
 
-        var firstPoint = intersections[0].Point;
-        var nextFaceId = intersections.First(p => processedFaceIds.Contains(p.FaceId)).FaceId;
-        var nextFace = meshObject.Faces.First(f => f.Id == nextFaceId);
+        var centerPoint = center ?? intersections[0].Point;
+        if (intersections.All(p => centerPoint.DistanceTo(p.Point) < 0.001))
+        {
+            return null;
+        }
+
+        var nextFaceId = intersections.FirstOrDefault(p => !processedFaceIds.Contains(p.FaceId))?.FaceId;
+        var nextFace = nextFaceId != null ? meshObject.Faces.First(f => f.Id == nextFaceId) : null;
 
         processedFaceIds.AddRange(intersections.Select(i => i.FaceId).ToArray());
 
-        return intersections.Skip(1).All(p => firstPoint.DistanceTo(p.Point) < 0.001) ?
-            new CylinderNeighbourFaces(firstNormal, processedFaceIds, nextFace) : null;
+        return new CylinderNeighbourFaces(normalLine, centerPoint, processedFaceIds.Distinct().ToList(), nextFace);
     }
 
-    private void a()
-    {
-        var watch = Stopwatch.StartNew();
-
-        Console.WriteLine($"Start parsing {_fileName}!");
-        Console.WriteLine();
-
-        var content = await _file.ReadObjFile();
-        var contentWitoutComments = content.Where(l => !l.StartsWith("#"));
-
-        var meshesText = string.Join(Environment.NewLine, contentWitoutComments)
-            .Split("o ")
-            .Where(t => !(string.IsNullOrEmpty(t) || t == "\r\n")).ToList();
-
-        var meshes = new List<Mesh>();
-        meshesText.ForEach(t =>
-        {
-            var meshLines = t.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-            var obj = new Obj();
-            obj.VertexListShift = meshes.Any() ? meshes.Last().Obj.VertexList.Last().Index : 0;
-            obj.NormalListShift = meshes.Any() ? meshes.Last().Obj.NormalList.Last().Index : 0;
-            obj.LoadObj(meshLines.Skip(1));
-            meshes.Add(new Mesh
-            {
-                Name = meshLines[0],
-                Obj = obj
-            });
-        });
-
-        var meshesObjects = meshes.Select((mesh, i) =>
-        {
-            Console.WriteLine($"Starting process mesh - {mesh.Name}");
-
-            var meshObjectsParser = new MeshObjectsParser();
-            var meshObjects = meshObjectsParser.Parse(mesh);
-
-            var edgeLoopParser = new EdgeLoopParser();
-            var meshObjectsLoops = meshObjects.Select(mo => edgeLoopParser.GetMeshObjectsLoops(mo))
-                .SelectMany(mol => mol.Objects).ToList();
-
-            Console.WriteLine($"Converted to loops mesh - {mesh.Name}, loops - {meshObjectsLoops.Count()}");
-            Console.WriteLine();
-            Console.WriteLine($"Processed meshes {i + 1}/{meshes.Count}");
-            Console.WriteLine();
-
-            return new MeshObjects
-            {
-                MeshName = mesh.Name,
-                Objects = meshObjectsLoops
-            };
-        }).ToList();
-
-        watch.Stop();
-
-        var objects = meshesObjects.SelectMany(mo => mo.Objects).ToArray();
-        var resultCurvesCount = objects.Select(o => o.Loops.Count()).Sum();
-
-        _statistics.ObjectsCount = objects.Length;
-
-        Console.WriteLine($"Finished parsing, processed {meshesObjects.Count()} meshes, received {objects.Length} objects," +
-            $" generated {resultCurvesCount} curves. Took - {watch.ElapsedMilliseconds / 1000.0} sec");
-        Console.WriteLine();
-
-        return meshesObjects;
-
-    }
-
-    private record CylinderNeighbourFaces(Line3d FaceNormal, List<int> ProcessedFaceIds, Face NextFace);
+    private record CylinderNeighbourFaces(Line3d FaceNormal, Point3d Center, List<int> ProcessedFaceIds, Face NextFace);
 }
 
 
