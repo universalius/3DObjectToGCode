@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using _3DObjectToGCode.Application.Features._3DObjectToGCode;
 
 namespace _3DObjectToGCode;
 
@@ -7,7 +8,10 @@ public static class ServiceRegistration
 {
     public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddHostedService<Flat3DObjectsToSvgHostedService>();
+        services.AddHostedService<_3DObjectToGCodeHostedService>();
+
+        services.Add3DObjectToGCodeFeature(configuration);
+
         //    .AddSingleton<SvgCompactingService>()
         //    .AddSingleton<IOFileService>()
         //    .AddSingleton<Statistics>()

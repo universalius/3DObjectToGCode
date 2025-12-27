@@ -1,9 +1,14 @@
-﻿namespace _3DObjectToGCode;
+﻿using _3DObjectToGCode.Application.Features._3DObjectToGCode;
+using Microsoft.Extensions.Hosting;
 
-public class _3DObjectToGCodeHostedService()
+namespace _3DObjectToGCode;
+
+public class _3DObjectToGCodeHostedService(_3DObjectToGCodeService _3DObjectToGCode) : IHostedService
 {
     public async Task StartAsync(CancellationToken stoppingToken)
     {
+        await _3DObjectToGCode.Convert();
+
         //var svg = await threeDObjectsParser.Transform3DObjectsTo2DSvgLoops();
         //var compactedSvg = await svgCompactingService.Compact(svg);
 
