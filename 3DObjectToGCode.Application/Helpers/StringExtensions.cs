@@ -1,4 +1,5 @@
-﻿using GeometRi;
+﻿using _3DObjectToGCode.Application.Enums;
+using GeometRi;
 using System.Globalization;
 
 namespace _3DObjectToGCode.Application.Helpers;
@@ -17,19 +18,19 @@ public static class StringExtensions
     //    return new DoublePoint(double.Parse(points[0], _culture), double.Parse(points[1], _culture));
     //}
 
-    public static string ToPathPointString(this Point3d p, string axis)
+    public static string ToPathPointString(this Point3d p, Axises axis)
     {
-        if (axis == "xy")
+        if (axis == Axises.XY)
         {
             return $"{p.X.ToString(_culture)} {p.Y.ToString(_culture)}";
         }
 
-        if (axis == "xz")
+        if (axis == Axises.XZ)
         {
             return $"{p.X.ToString(_culture)} {p.Z.ToString(_culture)}";
         }
 
-        if (axis == "yz")
+        if (axis == Axises.YZ)
         {
             return $"{p.Y.ToString(_culture)} {p.Z.ToString(_culture)}";
         }
@@ -37,7 +38,7 @@ public static class StringExtensions
         return string.Empty;
     }
 
-    public static string ToPathString(this Point3d[] points, string axis)
+    public static string ToPathString(this Point3d[] points, Axises axis)
     {
         return $"M {string.Join(" ", points.Select(p => p.ToPathPointString(axis)))} z";
     }

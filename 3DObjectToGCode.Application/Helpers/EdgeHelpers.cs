@@ -1,4 +1,5 @@
-﻿using GeometRi;
+﻿using _3DObjectToGCode.Application.Enums;
+using GeometRi;
 using System.Linq;
 
 namespace _3DObjectToGCode.Application.Helpers;
@@ -49,17 +50,17 @@ public static class EdgeHelpers
     //}
 
 
-    public static bool IsAxisPlaneCuted(this Segment3d segment, Plane3d plane, string axis)
+    public static bool IsAxisPlaneCuted(this Segment3d segment, Plane3d plane, Axises axis)
     {
         var point = plane.Point;
         var p1 = segment.P1;
         var p2 = segment.P2;
 
-        var dictionary = new Dictionary<string, (double PlaneCoord, double[] EdgeCoords)>
+        var dictionary = new Dictionary<Axises, (double PlaneCoord, double[] EdgeCoords)>
         {
-            { "xy", (point.Z, new[] { p1.Z, p2.Z }.Order().ToArray()) },
-            { "yz", (point.X, new[] { p1.X, p2.X }.Order().ToArray()) },
-            { "xz", (point.Y, new[] { p1.Y, p2.Y }.Order().ToArray()) },
+            { Axises.XY, (point.Z, new[] { p1.Z, p2.Z }.Order().ToArray()) },
+            { Axises.YZ, (point.X, new[] { p1.X, p2.X }.Order().ToArray()) },
+            { Axises.XZ, (point.Y, new[] { p1.Y, p2.Y }.Order().ToArray()) },
         };
 
         var value = dictionary[axis];
