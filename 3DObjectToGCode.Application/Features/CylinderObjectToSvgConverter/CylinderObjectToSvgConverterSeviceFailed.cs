@@ -51,7 +51,7 @@ public class CylinderObjectToSvgConverterSeviceFailed(IOFileService fileService,
 
         var svgDocument = SvgDocument.Create();
         var path = svgDocument.AddPath();
-        path.D = crossCurvePoints.ToArray().ToPathString();
+        //path.D = crossCurvePoints.ToArray().ToPathString();
         fileService.SaveSvg("cylinder_cross_slice", svgDocument.Element.OuterXml);
 
         return crossCurvePoints;

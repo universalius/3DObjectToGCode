@@ -17,13 +17,28 @@ public static class StringExtensions
     //    return new DoublePoint(double.Parse(points[0], _culture), double.Parse(points[1], _culture));
     //}
 
-    public static string ToPathPointString(this Point3d p)
+    public static string ToPathPointString(this Point3d p, string axis)
     {
-        return $"{p.X.ToString(_culture)} {p.Y.ToString(_culture)}";
+        if (axis == "xy")
+        {
+            return $"{p.X.ToString(_culture)} {p.Y.ToString(_culture)}";
+        }
+
+        if (axis == "xz")
+        {
+            return $"{p.X.ToString(_culture)} {p.Z.ToString(_culture)}";
+        }
+
+        if (axis == "yz")
+        {
+            return $"{p.Y.ToString(_culture)} {p.Z.ToString(_culture)}";
+        }
+
+        return string.Empty;
     }
 
-    public static string ToPathString(this Point3d[] points)
+    public static string ToPathString(this Point3d[] points, string axis)
     {
-        return $"M {string.Join(" ", points.Select(p => p.ToPathPointString()))} z";
+        return $"M {string.Join(" ", points.Select(p => p.ToPathPointString(axis)))} z";
     }
 }

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using ObjParser;
 using SvgLib;
 using System.Linq;
+using static GeometRi.ConvexPolyhedron;
 using Face = ObjParser.Types.Face;
 
 namespace _3DObjectToGCode.Application.Features.CylinderObjectToSvgConverter;
@@ -83,7 +84,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
                        .Select(e => acp.Plane.IntersectionWith(e.ToLine))
                        .ToArray();
 
-                    if (fp.Face.Id == 379)
+                    if (fp.Face.Id == 0 && acp.Axis == "xz")
                     {
                         var a = 1;
                     }
@@ -126,7 +127,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
                 var points = i.CrossCurveEdges.SelectMany(cce => cce.CrossPoints).Distinct().ToArray();
                 circle = new Circle3d(points[0], points[1], points[2]);
                 var distancesToCenter = points.Select(p => p.DistanceTo(circle.Center) - circle.R).ToArray();
-                isCircle = distancesToCenter.All(d => d < 0.0001);
+                isCircle = distancesToCenter.All(d => d < 0.1);
             }
             catch (Exception ex)
             {
@@ -137,9 +138,11 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
         })
         .ToArray();
 
-        return null;
+        var targetProfileCurve = circleCurves.FirstOrDefault(cc => !cc.IsCircle);
+        var profileCurveEdges = targetProfileCurve.CrossCurveEdges
+            .Select(cce => new CrossEdge(cce.FacePlane.Face.Id, cce.CrossPoints.ToSegments(false)[0])).ToArray();
 
-        //var profileCurvePoints = circleCurves.FirstOrDefault(cc => !cc.IsCircle).Points;
+        var profileCurvePoints = GetCrossEdgePoints(profileCurveEdges, profileCurveEdges[0], null, new List<Point3d>()).ToArray();
 
         //var facesWith4Verts = meshObject.Faces.Where(f => f.VertexIndexList.Length == 4).ToArray();
         //var targetFace = facesWith4Verts.ElementAt(facesWith4Verts.Length / 2);
@@ -154,13 +157,108 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
 
 
-        //var svgDocument = SvgDocument.Create();
-        //var path = svgDocument.AddPath();
-        //path.D = profileCurvePoints.ToPathString();
-        //fileService.SaveSvg("cylinder_cross_slice", svgDocument.Element.OuterXml);
+        var svgDocument = SvgDocument.Create();
+        svgDocument.Units = "m";
+        var path = svgDocument.AddPath();
+        path.D = profileCurvePoints.ToPathString(targetProfileCurve.Axis);
+        path.SetStyle("stroke-width", "0.05");
+        path.SetStyle("stroke", "red");
 
-        //return profileCurvePoints;
+        fileService.SaveSvg("cylinder_cross_slice", svgDocument.Element.OuterXml);
+
+        return profileCurvePoints;
     }
+
+    private IEnumerable<Point3d> GetCrossEdgePoints(IEnumerable<CrossEdge> crossEdges,
+        CrossEdge targetCrossEdge,
+        bool? p1Added,
+        List<Point3d> profileCurvePoints)
+    {
+        var processedFaceIds = new List<int> { targetCrossEdge.FaceId };
+        var targetEdge = targetCrossEdge.Edge;
+        //processedFaceIds.Add(targetCrossEdge.FaceId);
+
+        //var itemsWithSameEdge = crossEdges.Where(pce => !processedFaceIds.Contains(pce.FaceId) &&
+        //  pce.Edge == targetCrossEdge.Edge).ToArray();
+
+        if (p1Added == null)
+        {
+            profileCurvePoints.AddRange([targetEdge.P1, targetEdge.P2]);
+        }
+        else
+        {
+            profileCurvePoints.Add(p1Added.Value ? targetEdge.P2 : targetEdge.P1);
+        }
+
+        var itemsWithSameEdge = crossEdges.Where(pce => pce.FaceId != targetCrossEdge.FaceId &&
+              pce.Edge == targetEdge).ToArray();
+
+        processedFaceIds.AddRange(itemsWithSameEdge.Select(i => i.FaceId).ToArray());
+
+        var notProcessedCrossEdges = crossEdges
+            .Where(ce => !processedFaceIds.Contains(ce.FaceId))
+            .ToArray();
+
+        var nextEdge = notProcessedCrossEdges.FirstOrDefault(ce =>
+            PointEquals(ce.Edge.P1, targetEdge.P2) || PointEquals(ce.Edge.P2, targetEdge.P1));
+
+        if (targetCrossEdge.FaceId == 1583)
+        {
+            var d = notProcessedCrossEdges.FirstOrDefault(i => i.FaceId == 1582);
+            var c = PointEquals(d.Edge.P1, targetEdge.P2);
+            var b = PointEquals(d.Edge.P2, targetEdge.P2);
+        }
+
+        if (nextEdge != null)
+        {
+            GetCrossEdgePoints(notProcessedCrossEdges, nextEdge, PointEquals(nextEdge.Edge.P1, targetEdge.P2), profileCurvePoints);
+        }
+
+        return profileCurvePoints.Distinct();
+    }
+
+    private bool PointEquals(Point3d p1, Point3d p2)
+    {
+        return p1.DistanceTo(p2) <= 0.01;
+    }
+
+    //private Face[] GetOrderedFacesLoop(IEnumerable<Face> faces, CylinderNeighbourFaces cylinderNeighbourFaces)
+    //{
+    //    var result = GetNextCylinderLoopFace(meshObject, cylinderNeighbourFaces);
+    //    if (result?.FaceNormal != null && result.NextFace != null)
+    //    {
+    //        return GetCylinderAxis(meshObject, result);
+    //    }
+
+    //    return result?.FaceNormal != null && result?.Center != null ?
+    //        new Plane3d(result.Center, result.FaceNormal.Direction) : null;
+    //}
+
+    //private CylinderNeighbourFaces? GetNextLoopFace(IEnumerable<int> faceIds, IEnumerable<Face> faces, Face targetFace, List<int> processedFaceIds)
+    //{
+    //    var notProcessedFaces = faces
+    //        .Where(f => processedFaceIds.Count > 1 ? !processedFaceIds.Contains(f.Id) : true);
+    //    var notProcessedFaceIds = notProcessedFaces.Select(f => f.Id).ToArray();
+
+    //    var neighbourFaces = notProcessedFaces
+    //        .Where(f => f.VertexIndexList.Intersect(targetFace.VertexIndexList).Any());
+    //    var neighbourFaceIds = neighbourFaces.Select(f => f.Id).ToArray();
+
+    //    var nextNeighbourFaceIds = notProcessedFaceIds.Intersect(neighbourFaceIds);
+    //    if (nextNeighbourFaceIds.Count() > 1)
+    //    {
+    //        throw new Exception("More then one neighbor, can not select");
+    //    }
+
+    //    var nextFaceId = nextNeighbourFaceIds.First();
+    //    var nextFace = nextFaceId != null ? neighbourFaces.First(f => f.Id == nextFaceId) : null;
+
+    //    processedFaceIds.AddRange();
+
+
+    //}
+
+
 
     private Plane3d? GetCylinderAxis(MeshObject meshObject, CylinderNeighbourFaces cylinderNeighbourFaces)
     {
@@ -231,6 +329,8 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
                point.Y >= box.YMin && point.Y <= box.YMax &&
                point.Z >= box.ZMin && point.Z <= box.ZMax;
     }
+
+    private record CrossEdge(int FaceId, Segment3d Edge);
 
     private record CylinderNeighbourFaces(Line3d FaceNormal, Point3d Center, List<int> ProcessedFaceIds, Face NextFace);
 }
