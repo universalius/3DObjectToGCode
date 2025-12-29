@@ -1,4 +1,5 @@
 ﻿using GeometRi;
+using System.Linq;
 
 namespace _3DObjectToGCode.Application.Helpers;
 
@@ -28,15 +29,15 @@ public static class EdgeHelpers
     //    return ToSegments(loop.Points.ToArray());
     //}
 
-    public static Segment3d[] ToSegments(this Point3d[] points)
+    public static Segment3d[] ToSegments(this Point3d[] points, bool closed = true)
     {
         var pointsCount = points.Count();
         var segments = points.Select((p, j) =>
         {
             var nextPointIndex = j + 1;
             return nextPointIndex != pointsCount ?
-                new Segment3d(new Point3d(p.X, p.Y, 0), new Point3d(points[nextPointIndex].X, points[nextPointIndex].Y, 0)) :
-                null;
+                new Segment3d(p.Copy(), points[nextPointIndex].Copy()) :
+                closed ? new Segment3d(p.Copy(), points[0].Copy()) : null;
         }).Where(l => l != null).ToArray();
 
         return segments;
@@ -46,4 +47,22 @@ public static class EdgeHelpers
     //{
     //    return [segment.P1.ToDoublePoint(), segment.P2.ToDoublePoint()];
     //}
+
+
+    public static bool IsAxisPlaneCuted(this Segment3d segment, Plane3d plane, string axis)
+    {
+        var point = plane.Point;
+        var p1 = segment.P1;
+        var p2 = segment.P2;
+
+        var dictionary = new Dictionary<string, (double PlaneCoord, double[] EdgeCoords)>
+        {
+            { "xy", (point.Z, new[] { p1.Z, p2.Z }.Order().ToArray()) },
+            { "yz", (point.X, new[] { p1.X, p2.X }.Order().ToArray()) },
+            { "xz", (point.Y, new[] { p1.Y, p2.Y }.Order().ToArray()) },
+        };
+
+        var value = dictionary[axis];
+        return value.EdgeCoords[0] <= value.PlaneCoord && value.EdgeCoords[1] >= value.PlaneCoord;
+    }
 }

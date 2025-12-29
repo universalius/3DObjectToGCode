@@ -1,4 +1,5 @@
-﻿using ObjParser.Types;
+﻿using ObjParser;
+using ObjParser.Types;
 
 namespace _3DObjectToGCode.Application.Features.ObjToMeshConverter;
 
@@ -6,5 +7,6 @@ public class MeshObject
 {
     public IEnumerable<Vertex> Verts { get; set; }
     public IEnumerable<Face> Faces { get; set; }
+    public Extent Size { get; set; }
     public string Axis { get; set; }
 }

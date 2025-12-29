@@ -37,6 +37,7 @@ public class ObjToMeshConverterService(IOFileService _file)
         {
             Verts = obj.VertexList.Where(v => objectVertsIds.Contains(v.Index)).ToArray(),
             Faces = obj.FaceList.Where(f => objectFacesIds.Contains(f.Id)).ToArray(),
+            Size = obj.Size,
         };
 
         meshObjects.Add(meshObject);
