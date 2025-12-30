@@ -152,7 +152,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
 
         fileService.SaveSvg($"{targetProfileCurve.Axis.ToString()}_cross_slice", svgDocument.Element.OuterXml);
 
-        return profileCurvePoints;
+        return profileCurvePoints.Select(p => p.ChangeAxises(targetProfileCurve.Axis)).ToArray();
     }
 
     private IEnumerable<Point3d> GetCrossEdgePoints(IEnumerable<CrossEdge> crossEdges,
@@ -206,7 +206,7 @@ public class CylinderObjectToSvgConverterSevice(IOFileService fileService, ILogg
             GetCrossEdgePoints(notProcessedCrossEdges, nextEdge, profileCurvePoints);
         }
 
-        return profileCurvePoints;
+        return profileCurvePoints.Distinct();
     }
 
     private bool PointEquals(Point3d p1, Point3d p2)

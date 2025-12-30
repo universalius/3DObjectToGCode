@@ -1,3 +1,4 @@
+using _3DObjectToGCode.Application.Features.CyinderObjectPartsClassificator;
 using _3DObjectToGCode.Application.Features.CylinderObjectToSvgConverter;
 using _3DObjectToGCode.Application.Features.ObjToMeshConverter;
 using Microsoft.Extensions.Configuration;
@@ -14,7 +15,8 @@ public static class ServiceRegistration
 
         services
             .AddObjToMeshConverterFeature(configuration)
-            .AddCylinderObjectToSvgConverterFeature(configuration);
+            .AddCylinderObjectToSvgConverterFeature(configuration)
+            .AddCyinderObjectPartsClassificatorFeature(configuration);
 
         return services;
     }
