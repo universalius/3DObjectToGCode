@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "3DObjectToGCode.Application
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SvgLib", "..\SvgLib\SvgLib.csproj", "{BE3FA130-C563-5E4B-B1E5-016C7DB60EEA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GCodes", "GCodes\GCodes.csproj", "{82989316-E596-49AC-A363-F9F00347CDD9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +37,10 @@ Global
 		{BE3FA130-C563-5E4B-B1E5-016C7DB60EEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE3FA130-C563-5E4B-B1E5-016C7DB60EEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE3FA130-C563-5E4B-B1E5-016C7DB60EEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82989316-E596-49AC-A363-F9F00347CDD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82989316-E596-49AC-A363-F9F00347CDD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82989316-E596-49AC-A363-F9F00347CDD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82989316-E596-49AC-A363-F9F00347CDD9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
