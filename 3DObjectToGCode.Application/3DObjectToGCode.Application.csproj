@@ -20,6 +20,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\ObjParser\ObjParser.csproj" />
 		<ProjectReference Include="..\..\SvgLib\SvgLib.csproj" />
+		<ProjectReference Include="..\GCodes\GCodes.csproj" />
 		<PackageReference Include="GeometRi" Version="1.5.0.7" />
 	</ItemGroup>
 

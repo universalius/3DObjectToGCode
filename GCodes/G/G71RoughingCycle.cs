@@ -26,10 +26,10 @@ namespace GCodes.G
 
         public override string ToString()
         {
-            return $"G71 U{DepthOfCut:F3} R{RetractValue:F3} ;" +
+            return $"G71 U{DepthOfCut:F3} R{RetractValue:F3} ;\n" +
                    $"G71 P{FirstLineOfSubProgramm} Q{LastLineOfSubProgramm} " +
                    $"U{FinishCutReserveX:F3} W{FinishCutReserveZ:F3} " +
-                   $"F{FeedRate:F5} ; Roughing cycle";
+                   $"F{FeedRate:F5} ; (Roughing cycle)";
         }
     }
 }

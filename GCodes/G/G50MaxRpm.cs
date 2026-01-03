@@ -13,6 +13,6 @@ public class G50MaxRpm : IGCode
 
     public override string ToString()
     {
-        return $"G50 S{MaxSpindleSpeed} ; Set maximum spindle speed";
+        return $"G50 S{MaxSpindleSpeed} ; (Set maximum spindle speed)";
     }
 }

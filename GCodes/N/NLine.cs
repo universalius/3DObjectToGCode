@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using GCodes.Interfaces;
 
 namespace GCodes.N;
 
-public class NLine
+public class NLine : IGCode
 {
     public int LineNumber { get; set; }
     public NLine(int lineNumber)
@@ -15,6 +11,6 @@ public class NLine
     }
     public override string ToString()
     {
-        return $"N{LineNumber} ;";
+        return $"N{LineNumber}{(LineNumber == 1 ? " ;" : string.Empty)}";
     }
 }

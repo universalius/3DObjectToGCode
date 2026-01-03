@@ -7,6 +7,6 @@ public class G42CutterCompensationRight : IGCode
 {
     public override string ToString()
     {
-        return "G42 ; Enable cutter radius compensation right";
+        return "G42 ; (Enable cutter radius compensation right)";
     }
 }

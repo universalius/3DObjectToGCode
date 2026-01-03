@@ -37,7 +37,7 @@ public class G10SetOriginPoint : IGCode
         if (Z.HasValue)
             parts.Add($"Z{Z.Value:F3}");
 
-        parts.Add("; Rapid positioning by machine coords");
+        parts.Add("; (Rapid positioning by machine coords)");
 
         return string.Join(" ", parts);
     }

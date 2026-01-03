@@ -10,6 +10,6 @@ public static class M01OptionalStop
 {
     public static string GetCode()
     {
-        return "M01 ; Optional stop";
+        return "M01 ; (Optional stop)";
     }
 }

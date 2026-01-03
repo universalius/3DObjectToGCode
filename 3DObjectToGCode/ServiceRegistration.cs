@@ -1,6 +1,6 @@
-using Microsoft.Extensions.DependencyInjection;
+using _3DObjectToGCode.Application.Features.Cylinder3DObjectToGCode;
 using Microsoft.Extensions.Configuration;
-using _3DObjectToGCode.Application.Features._3DObjectToGCode;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace _3DObjectToGCode;
 
@@ -10,7 +10,7 @@ public static class ServiceRegistration
     {
         services.AddHostedService<_3DObjectToGCodeHostedService>();
 
-        services.Add3DObjectToGCodeFeature(configuration);
+        services.AddCylinder3DObjectToGCodeFeature(configuration);
 
         //    .AddSingleton<SvgCompactingService>()
         //    .AddSingleton<IOFileService>()

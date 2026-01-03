@@ -1,4 +1,5 @@
-﻿using GCodes.Interfaces;
+﻿using GCodes.G;
+using GCodes.Interfaces;
 
 namespace GCodes;
 
@@ -15,6 +16,13 @@ public class G53MachineOriginPoint : IGCode
         Z = z;
     }
 
+    public G53MachineOriginPoint(GCoordinate Coord)
+    {
+        X = Coord.X;
+        Y = Coord.Y;
+        Z = Coord.Z;
+    }
+
     public override string ToString()
     {
         var parts = new List<string> { "G53" };
@@ -25,7 +33,7 @@ public class G53MachineOriginPoint : IGCode
         if (Z.HasValue)
             parts.Add($"Z{Z.Value:F3}");
 
-        parts.Add("; Rapid positioning by machine coords");
+        parts.Add("; (Rapid positioning by machine coords)");
 
         return string.Join(" ", parts);
     }

@@ -1,13 +1,18 @@
 ﻿using _3DObjectToGCode.Application.Features._3DObjectToGCode;
+using _3DObjectToGCode.Application.Features.Cylinder3DObjectToGCode;
+using _3DObjectToGCode.Application.Features.ObjToMeshConverter;
 using Microsoft.Extensions.Hosting;
 
 namespace _3DObjectToGCode;
 
-public class _3DObjectToGCodeHostedService(_3DObjectToGCodeService _3DObjectToGCode) : IHostedService
+public class _3DObjectToGCodeHostedService(ObjToMeshConverterService objToMeshConverter,
+    Cylinder3DObjectToGCodeService _3DObjectToGCode) : IHostedService
 {
     public async Task StartAsync(CancellationToken stoppingToken)
     {
-        await _3DObjectToGCode.Convert();
+        var meshObject = await objToMeshConverter.Convert();
+
+        await _3DObjectToGCode.Convert(meshObject);
 
         //var svg = await threeDObjectsParser.Transform3DObjectsTo2DSvgLoops();
         //var compactedSvg = await svgCompactingService.Compact(svg);

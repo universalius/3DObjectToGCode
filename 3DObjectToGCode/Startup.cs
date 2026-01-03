@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 
 namespace _3DObjectToGCode;
 
@@ -16,9 +17,9 @@ internal class Startup
     {
         services.AddServices(Configuration);
 
-        //var cultureInfo = new CultureInfo("en-GB");
-        //CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-        //CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
-        //CultureInfo.CurrentCulture = cultureInfo;
+        var cultureInfo = new CultureInfo("en-GB");
+        CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+        CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+        CultureInfo.CurrentCulture = cultureInfo;
     }
 }

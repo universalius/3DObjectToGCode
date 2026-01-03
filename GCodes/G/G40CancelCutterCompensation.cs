@@ -6,6 +6,6 @@ public class G40CancelCutterCompensation : IGCode
 {
     public override string ToString()
     {
-        return "G40 ; Cancel cutter radius compensation";
+        return "G40 ; (Cancel cutter radius compensation)";
     }
 }

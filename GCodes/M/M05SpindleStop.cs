@@ -10,6 +10,6 @@ public static class M05SpindleStop
 {
     public static string GetCode()
     {
-        return "M05 ; Stop spindle";
+        return "M05 ; (Stop spindle)";
     }
 }
