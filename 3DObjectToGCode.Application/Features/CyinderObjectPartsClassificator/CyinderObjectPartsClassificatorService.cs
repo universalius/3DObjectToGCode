@@ -25,7 +25,8 @@ public class CyinderObjectPartsClassificatorService()
         };
 
         var centerPoint = new Point3d(centerX, centerY, 0.0);
-        var segments = points.Where(p => p.Y >= centerPoint.Y).ToArray().ToSegments(false).ToList();
+        var closed = points.First().DistanceTo(points.Last()) <= 0.001;
+        var segments = points.Where(p => p.Y >= centerPoint.Y + 0.001 || p.Y >= centerPoint.Y - 0.001).ToArray().ToSegments(closed).ToList();
 
         if (segments.First().P1.X > segments.Last().P1.X)
         {

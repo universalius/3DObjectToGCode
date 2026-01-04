@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using GCodes.Interfaces;
 
 namespace GCodes.M;
 
-public static class M05SpindleStop
+public class M05SpindleStop : IGCode
 {
-    public static string GetCode()
+    public M05SpindleStop()
+    {
+    }
+
+    public override string ToString()
     {
         return "M05 ; (Stop spindle)";
     }
